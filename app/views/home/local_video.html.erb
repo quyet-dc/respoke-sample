@@ -1,0 +1,84 @@
+<script src="https://cdn.respoke.io/respoke.min.js"></script>
+
+<!-- Create DOM elements to hang the WEBRTC call -->
+<video id="localVideo"></video>
+<video id="remoteVideo"></video>
+
+<script>
+    var appId = "b7c5c41b-6e15-4537-b1d1-01aca44b5350";
+
+    var endpointId = 'quyetdc.uet@gmail.com';
+
+    // Create instance of respoke client using app ID
+    var client = respoke.createClient({
+        appId: appId,
+        developmentMode: true
+    });
+
+    // connect event fire after successful connection to Respoke
+    client.listen('connect', function(e){
+        console.log('LOCAL -- connected to Respoke!', e);
+
+        client.join({
+            id: "united-federation-of-planets",
+
+            onSuccess: function(group) {
+                group.listen("join", function(e) {
+                    console.log('join');
+                    var endpoint = e.connection.getEndpoint();
+                });
+
+                group.listen("leave", function(e) {
+                    console.log('leave');
+                    var endpoint = e.connection.getEndpoint();
+                });
+
+                group.getMembers({
+                    onSuccess: function(connections) {
+                        console.log('get members success');
+                        console.log(connections);
+                        connections.forEach(function(connection){
+//                            var endpoint = connection.getEndpoint();
+//                            endpoint.listen("presence", function(e) {
+//                                var presence = e.target.presence;
+//                                var endpointId = e.target.id;
+//                                console.log('presence -- ');
+//                                console.log(presence);
+//                                console.log(endpointId);
+//                            });
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    client.listen("presence", function(e) {
+        var presence = e.target.presence;
+
+        console.log('my presence -- ');
+        console.log(presence);
+    });
+
+    // Execute some signin event, then connect to Respoke
+    client.connect({
+        endpointId: endpointId
+    });
+
+    // answer the incoming call
+    client.listen("call", function(e) {
+        console.log('call answer');
+        var call = e.call;
+
+        // Show some UI to answer or hangup the call
+        // For illustration, let us just answer the call
+        console.log(call);
+        if(call.caller !== true) {
+            console.log('go to answer');
+            call.answer({
+                videoLocalElement: document.getElementById("localVideo"),
+                videoRemoteElement: document.getElementById("remoteVideo")
+            });
+        }
+    });
+</script>

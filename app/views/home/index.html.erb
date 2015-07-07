@@ -1,0 +1,54 @@
+<script src="https://cdn.respoke.io/respoke.min.js"></script>
+
+<!-- Create DOM elements to hang the WEBRTC call -->
+<video id="localVideo"></video>
+<video id="remoteVideo"></video>
+
+<script>
+    var appId = "b7c5c41b-6e15-4537-b1d1-01aca44b5350";
+
+    var endpointId = 'quyetdc.uet@gmail.com';
+
+    // Create instance of respoke client using app ID
+    var client = respoke.createClient({
+       appId: appId,
+       developmentMode: true
+    });
+
+    // connect event fire after successful connection to Respoke
+    client.listen('connect', function(e){
+        console.log('connected to Respoke!', e);
+    });
+
+    // Execute some signin event, then connect to Respoke
+    client.connect({
+       endpointId: endpointId
+    });
+
+//    // listen for a coming call
+//    client.listen('call', function(e){
+//       var call = e.call;
+//        // Show some UI to answer or hangup the call
+//        // For illustration, let us just answer the call
+//        if(call.caller !== true) {
+//            call.answer({
+//                videoLocalElement: document.getElementById("localVideo"),
+//                videoRemoteElement: document.getElementById("remoteVideo")
+//            });
+//        }
+//    });
+//
+//    // Get endpoint you want to connect to have a video call with
+//    var endpoint = client.getEndpoint({
+//        id: "quyetdc.uet@gmail.com"
+//    });
+//
+//    // start video call with the endpoint
+//    var call = endpoint.startVideoCall({
+//        videoLocalElement: document.getElementById("localVideo"),
+//        videoRemoteElement: document.getElementById("remoteVideo")
+//    })
+
+
+
+</script>
