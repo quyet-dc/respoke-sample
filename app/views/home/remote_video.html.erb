@@ -1,105 +1,139 @@
-<script src="https://cdn.respoke.io/respoke.min.js"></script>
+<!DOCTYPE html>
 
-<!-- Create DOM elements to hang the WEBRTC call -->
-<video id="localVideo"></video>
-<video id="remoteVideo"></video>
+<head>
+  <title>Respoke - Video Calling Example</title>
 
-<button onclick="callLocal()">call local</button>
+  <!-- Respoke client library -->
+  <script src="https://cdn.respoke.io/respoke.min.js"></script>
 
-<script>
-    var appId = "b7c5c41b-6e15-4537-b1d1-01aca44b5350";
+  <!-- jQuery, for this example -->
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
 
-    var endpointId = 'test@gmail.com';
+  <!-- Some simple styles to make things perty -->
+</head>
 
-    // Create instance of respoke client using app ID
+<body>
+<h3 id="status">Not Connected</h3>
+<div id="login">
+  <button id="doLogin">Connect to Respoke</button>
+</div>
+
+<div>
+  <button id="doCall">Call local</button>
+  <button id="doHangUp">Hang Up</button>
+</div>
+
+<!-- The person you're calling -->
+<h3>Local video</h3>
+<div id="remoteVideoSource"></div>
+
+<hr />
+
+<!-- You -->
+<h3>Remote video</h3>
+<div id="localVideoSource"></div>
+
+<script type="text/javascript">
+    // App ID value from the dev portal. You can play
+    // around with the supplied ID or replace it with
+    // your own.
+    var appid = '7350fe8d-a87c-4899-af2a-7780b2a78b29';
+    var activeCall;
+
+    // The ID that other users will identify you by (your username)
+    var endpointId = "remote@gmail.com";
+
+    // Create the client object using the App ID
     var client = respoke.createClient({
-        appId: appId,
-        developmentMode: true
+//        appId: "7350fe8d-a87c-4899-af2a-7780b2a78b29",
+//        developmentMode: false
     });
 
-    // connect event fire after successful connection to Respoke
-    client.listen('connect', function(e){
-        console.log('REMOTE -- connected to Respoke!', e);
+    // "connect" event fired after successful connection to Respoke
+    client.listen('connect', function(e) {
+        console.log("Connected to Respoke: ", e);
+    });
 
-        client.join({
-            id: "united-federation-of-planets",
+    // Connect to Respoke when the user clicks "connect"
+    $("#doLogin").click(function() {
+        console.log("<%= @respoke_token %>");
 
-            onSuccess: function(group) {
-                group.listen("join", function(e) {
-                    console.log('join');
-                    var endpoint = e.connection.getEndpoint();
-                });
+        $.ajax({
+            method: "POST",
+            url: "/get_respoke_token.json",
+            data: {
+                respoke: { endpointId: endpointId }
+            },
+            success: function(response) {
+                var token = response.token;
 
-                group.listen("leave", function(e) {
-                    console.log('leave');
-                    var endpoint = e.connection.getEndpoint();
-                });
-
-                group.getMembers({
-                    onSuccess: function(connections) {
-                        console.log('get members success');
-                        console.log(connections);
-//                        connections.forEach(function(connection){
-                            var endpoint = connections[0].getEndpoint();
-                            endpoint.listen("presence", function(e) {
-                                var presence = e.target.presence;
-                                var endpointId = e.target.id;
-                                console.log('presence -- ');
-                                console.log(presence);
-                                console.log(endpointId);
-
-                                endpoint.startVideoCall({
-                                    videoLocalElement: document.getElementById("localVideo"),
-                                    videoRemoteElement: document.getElementById("remoteVideo")
-                                });
-                            });
-//                        });
-                    }
+                client.connect({
+                    token: token
                 });
             }
         });
+
     });
 
-    client.listen("presence", function(e) {
-        var presence = e.target.presence;
-//        console.log('my presence -- ');
-//        console.log(presence);
-    });
+    // The options for our video call including constraints and callbacks
+    var callOptions = {
+        constraints: {audio: true, video: true},
 
+        // Your video
+        onLocalMedia: function(evt) {
+            setVideo('localVideoSource', evt.element)
+        },
 
-    // Execute some signin event, then connect to Respoke
-    client.connect({
-        endpointId: endpointId
-    });
-
-    var callLocal = function(){
-        //    get the endpoint you want to start a video call with.
-        var endpoint = client.getEndpoint({
-            id: "test@gmail.com"
-        });
-
-        // start the video call with the endpoint.
-        endpoint.startVideoCall({
-            videoLocalElement: document.getElementById("localVideo"),
-            videoRemoteElement: document.getElementById("remoteVideo")
-        });
+        // Their video
+        onConnect: function(evt) {
+            setVideo('remoteVideoSource', evt.element)
+        }
     };
 
-    // answer the incoming call
-    client.listen("call", function(e) {
-        console.log('call answer');
-        var call = e.call;
+    // Listen for incoming calls
+    client.listen('call', function(evt) {
+        console.log('call: ', evt.call);
+        activeCall = evt.call;
 
-        // Show some UI to answer or hangup the call
-        // For illustration, let us just answer the call
-        console.log(call);
-        if(call.caller !== true) {
-            console.log('go to answer');
-            call.answer({
-                videoLocalElement: document.getElementById("localVideo"),
-                videoRemoteElement: document.getElementById("remoteVideo")
+        // We only want to answer if we didn't initiate the call
+        if(activeCall.caller !== true) {
+            activeCall.answer(callOptions);
+
+            // The hangup event indicates the call is over
+            activeCall.listen('hangup', function () {
+                hangUp();
             });
         }
     });
 
+    // Call the recipient
+    $("#doCall").click(function() {
+//        TODO: change here
+        var recipientId = 'local@gmail.com';
+        var recipientEndpoint = client.getEndpoint({ id: recipientId });
+        activeCall = recipientEndpoint.startVideoCall(callOptions);
+    });
+
+    // Hangup the call
+    $("#doHangUp").click(hangUp);
+
+    // Adds the supplied video element as a child of the supplied element
+    function setVideo(elementId, videoElement) {
+        var videoParent = document.getElementById(elementId);
+        videoParent.innerHTML = "";
+        videoParent.appendChild(videoElement);
+    }
+
+    // End the current call and clean up the DOM
+    function hangUp() {
+        activeCall.hangup();
+        activeCall = null;
+
+        // Remove the video elements
+        $("#localVideoSource").html("");
+        $("#remoteVideoSource").html("");
+    }
 </script>
+</body>
+
+</html>

@@ -5,9 +5,9 @@ Rails.application.routes.draw do
   # You can have the root of your site routed with "root"
   root 'home#index'
 
-  get '/local_video' => 'home#local_video'
-
   get '/remote_video' => 'home#remote_video'
+
+  post '/get_respoke_token.json' => 'home#get_respoke_token'
 
   # Example of regular route:
   #   get 'products/:id' => 'catalog#view'

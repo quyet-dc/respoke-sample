@@ -1,54 +1,138 @@
-<script src="https://cdn.respoke.io/respoke.min.js"></script>
+<!DOCTYPE html>
 
-<!-- Create DOM elements to hang the WEBRTC call -->
-<video id="localVideo"></video>
-<video id="remoteVideo"></video>
+<head>
+  <title>Respoke - Video Calling Example</title>
 
-<script>
-    var appId = "b7c5c41b-6e15-4537-b1d1-01aca44b5350";
+  <!-- Respoke client library -->
+  <script src="https://cdn.respoke.io/respoke.min.js"></script>
 
-    var endpointId = 'quyetdc.uet@gmail.com';
+  <!-- jQuery, for this example -->
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
 
-    // Create instance of respoke client using app ID
+  <!-- Some simple styles to make things perty -->
+</head>
+
+<body>
+<h3 id="status">Not Connected</h3>
+<div id="login">
+  <button id="doLogin">Connect to Respoke</button>
+</div>
+
+<div>
+  <button id="doCall">Call local</button>
+  <button id="doHangUp">Hang Up</button>
+</div>
+
+<!-- Me -->
+<h3>Local video</h3>
+<div id="remoteVideoSource"></div>
+
+<hr />
+
+<!-- Next user -->
+<h3>Remote video</h3>
+<div id="localVideoSource"></div>
+
+<script type="text/javascript">
+    // App ID value from the dev portal. You can play
+    // around with the supplied ID or replace it with
+    // your own.
+    var appid = '7350fe8d-a87c-4899-af2a-7780b2a78b29';
+    var activeCall;
+
+    // The ID that other users will identify you by (your username)
+    var endpointId = "local@gmail.com";
+
+    // Create the client object using the App ID
     var client = respoke.createClient({
-       appId: appId,
-       developmentMode: true
     });
 
-    // connect event fire after successful connection to Respoke
-    client.listen('connect', function(e){
-        console.log('connected to Respoke!', e);
+    // "connect" event fired after successful connection to Respoke
+    client.listen('connect', function(e) {
+        console.log("Connected to Respoke: ", e);
     });
 
-    // Execute some signin event, then connect to Respoke
-    client.connect({
-       endpointId: endpointId
+    // Connect to Respoke when the user clicks "connect"
+    $("#doLogin").click(function() {
+        console.log("<%= @respoke_token %>");
+
+        $.ajax({
+            method: "POST",
+            url: "/get_respoke_token.json",
+            data: {
+                respoke: { endpointId: endpointId }
+            },
+            success: function(response) {
+                var token = response.token;
+
+                client.connect({
+                    token: token
+                });
+            }
+        });
+
     });
 
-//    // listen for a coming call
-//    client.listen('call', function(e){
-//       var call = e.call;
-//        // Show some UI to answer or hangup the call
-//        // For illustration, let us just answer the call
-//        if(call.caller !== true) {
-//            call.answer({
-//                videoLocalElement: document.getElementById("localVideo"),
-//                videoRemoteElement: document.getElementById("remoteVideo")
+//    VIDEO CALL (after signing in respoke)
+
+//    // The options for our video call including constraints and callbacks
+//    var callOptions = {
+//        constraints: {audio: true, video: true},
+//
+//        // Your video
+//        onLocalMedia: function(evt) {
+//            setVideo('localVideoSource', evt.element)
+//        },
+//
+//        // Their video
+//        onConnect: function(evt) {
+//            setVideo('remoteVideoSource', evt.element)
+//        }
+//    };
+//
+//    // Listen for incoming calls
+//    client.listen('call', function(evt) {
+//        console.log('call: ', evt.call);
+//        activeCall = evt.call;
+//
+//        // We only want to answer if we didn't initiate the call
+//        if(activeCall.caller !== true) {
+//            activeCall.answer(callOptions);
+//
+//            // The hangup event indicates the call is over
+//            activeCall.listen('hangup', function () {
+//                hangUp();
 //            });
 //        }
 //    });
 //
-//    // Get endpoint you want to connect to have a video call with
-//    var endpoint = client.getEndpoint({
-//        id: "quyetdc.uet@gmail.com"
+//    // Call the recipient
+//    $("#doCall").click(function() {
+//        var recipientId = 'local@gmail.com';
+//        var recipientEndpoint = client.getEndpoint({ id: recipientId });
+//        activeCall = recipientEndpoint.startVideoCall(callOptions);
 //    });
 //
-//    // start video call with the endpoint
-//    var call = endpoint.startVideoCall({
-//        videoLocalElement: document.getElementById("localVideo"),
-//        videoRemoteElement: document.getElementById("remoteVideo")
-//    })
-
-
-
+//    // Hangup the call
+//    $("#doHangUp").click(hangUp);
+//
+//    // Adds the supplied video element as a child of the supplied element
+//    function setVideo(elementId, videoElement) {
+//        var videoParent = document.getElementById(elementId);
+//        videoParent.innerHTML = "";
+//        videoParent.appendChild(videoElement);
+//    }
+//
+//    // End the current call and clean up the DOM
+//    function hangUp() {
+//        activeCall.hangup();
+//        activeCall = null;
+//
+//        // Remove the video elements
+//        $("#localVideoSource").html("");
+//        $("#remoteVideoSource").html("");
+//    }
 </script>
+</body>
+
+</html>
